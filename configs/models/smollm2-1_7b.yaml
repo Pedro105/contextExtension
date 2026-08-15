@@ -1,0 +1,16 @@
+hf_model_id: HuggingFaceTB/SmolLM2-1.7B
+num_hidden_layers: 24
+num_attention_heads: 32
+num_key_value_heads: 32
+head_dim: 64
+hidden_size: 2048
+max_position_embeddings: 8192
+rope_theta: 130000.0
+torch_dtype: bfloat16
+rope_scaling: null
+sliding_window: null
+sliding_window_enabled: false
+layer_types: null
+family: llama
+description: 'SmolLM2 1.7B: MHA (no GQA), natively pretrained at 8k, comparison arm
+  for the GQA reference model.'

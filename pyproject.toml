@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ctxcost"
+version = "0.1.0"
+description = "Empirical study of the serving cost of long context in small LLMs"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+readme = "README.md"
+dependencies = [
+    "torch",
+    "transformers",
+    "datasets",
+    "huggingface_hub",
+    "pyyaml",
+    "pandas",
+    "numpy",
+    "matplotlib",
+]
+
+[project.optional-dependencies]
+serve = ["vllm"]
+dev = ["pytest", "ruff"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests", "scripts"]

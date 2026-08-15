@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+*.egg
+.Python
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Training / experiment artifacts
+checkpoints/
+wandb/
+
+# Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# OS
+.DS_Store
+
+# NOTE: results/ is intentionally NOT gitignored — committed metric outputs live there.
