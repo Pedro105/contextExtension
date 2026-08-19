@@ -1,0 +1,29 @@
+# Phase 1 real sweep: base models at native context, no fine-tuning involved.
+# One complete arm of the final results -- rerun unchanged against fine-tuned
+# checkpoints later by pointing `models` at the checkpoint path/name instead.
+server:
+  mode: docker
+  image: ctxcost-serve:gpu
+  gpu: true
+  host_port: 8000
+  startup_timeout_s: 600 # real model weights to load
+
+models:
+  - hf_model_id: HuggingFaceTB/SmolLM2-1.7B
+  - hf_model_id: Qwen/Qwen2.5-1.5B
+
+context_lengths: [1024, 2048, 4096, 8192]
+concurrency_levels: [1, 4, 16, 64, 128, 256]
+
+workload:
+  n_requests_per_cell: 128
+  max_output_tokens: 256
+  prefix_tokens: 64
+  enable_shared_prefix: false # the real measurement; see shared-prefix variant to
+  # study the confound deliberately
+  warmup_requests: 8
+  seed: 0
+
+metrics_poll_interval_s: 1.0
+gpu_memory_utilization: 0.9
+enable_prefix_caching: false

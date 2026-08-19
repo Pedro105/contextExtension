@@ -1,0 +1,29 @@
+# Harness plumbing check: tiny model, CPU backend, short contexts, low request
+# counts. Verifies the sweep driver, load generator, metrics scraper, and analysis
+# path all work end to end -- not a real measurement. Should run in well under a
+# minute once the CPU image (deploy/docker/serve.cpu.Dockerfile) is built and the
+# tiny model is cached locally.
+server:
+  mode: docker
+  image: ctxcost-serve:cpu
+  gpu: false
+  host_port: 8000
+  startup_timeout_s: 300 # tiny model, but CPU cold-start can still take a minute or two
+
+models:
+  - hf_model_id: hf-internal-testing/tiny-random-gpt2
+
+context_lengths: [64, 128]
+concurrency_levels: [1, 2]
+
+workload:
+  n_requests_per_cell: 4
+  max_output_tokens: 8
+  prefix_tokens: 8
+  enable_shared_prefix: false
+  warmup_requests: 1
+  seed: 0
+
+metrics_poll_interval_s: 0.5
+gpu_memory_utilization: 0.9 # unused on the CPU image; kept for schema consistency
+enable_prefix_caching: false

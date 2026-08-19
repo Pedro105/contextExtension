@@ -1,0 +1,46 @@
+# A representative excerpt of vLLM 0.27.1's real /metrics exposition-format output
+# (metric names, types, and HELP text confirmed against vllm/v1/metrics/loggers.py at
+# tag v0.27.1; sample values below are synthetic, for parser testing only). Note the
+# renames vs. older/assumed vLLM metric names: gpu_cache_usage_perc -> kv_cache_usage_perc,
+# and there is no single prefix_cache_hit_rate metric -- hit rate is derived from the
+# two raw counters prefix_cache_queries/prefix_cache_hits.
+# HELP vllm:num_requests_running Number of requests in model execution batches.
+# TYPE vllm:num_requests_running gauge
+vllm:num_requests_running{model_name="HuggingFaceTB/SmolLM2-1.7B"} 12.0
+# HELP vllm:num_requests_waiting Number of requests waiting to be processed.
+# TYPE vllm:num_requests_waiting gauge
+vllm:num_requests_waiting{model_name="HuggingFaceTB/SmolLM2-1.7B"} 3.0
+# HELP vllm:kv_cache_usage_perc KV-cache usage. 1 means 100 percent usage.
+# TYPE vllm:kv_cache_usage_perc gauge
+vllm:kv_cache_usage_perc{model_name="HuggingFaceTB/SmolLM2-1.7B"} 0.734
+# HELP vllm:prefix_cache_queries Prefix cache queries, in terms of number of queried tokens.
+# TYPE vllm:prefix_cache_queries counter
+vllm:prefix_cache_queries{model_name="HuggingFaceTB/SmolLM2-1.7B"} 48213.0
+# HELP vllm:prefix_cache_hits Prefix cache hits, in terms of number of cached tokens.
+# TYPE vllm:prefix_cache_hits counter
+vllm:prefix_cache_hits{model_name="HuggingFaceTB/SmolLM2-1.7B"} 9021.0
+# HELP vllm:num_preemptions Cumulative number of preemption from the engine.
+# TYPE vllm:num_preemptions counter
+vllm:num_preemptions{model_name="HuggingFaceTB/SmolLM2-1.7B"} 4.0
+# HELP vllm:prompt_tokens Number of prefill tokens processed.
+# TYPE vllm:prompt_tokens counter
+vllm:prompt_tokens{model_name="HuggingFaceTB/SmolLM2-1.7B"} 128933.0
+# HELP vllm:generation_tokens Number of generation tokens processed.
+# TYPE vllm:generation_tokens counter
+vllm:generation_tokens{model_name="HuggingFaceTB/SmolLM2-1.7B"} 61042.0
+# HELP vllm:time_to_first_token_seconds Histogram of time to first token in seconds.
+# TYPE vllm:time_to_first_token_seconds histogram
+vllm:time_to_first_token_seconds_bucket{model_name="HuggingFaceTB/SmolLM2-1.7B",le="0.1"} 4.0
+vllm:time_to_first_token_seconds_bucket{model_name="HuggingFaceTB/SmolLM2-1.7B",le="0.5"} 41.0
+vllm:time_to_first_token_seconds_bucket{model_name="HuggingFaceTB/SmolLM2-1.7B",le="+Inf"} 55.0
+vllm:time_to_first_token_seconds_sum{model_name="HuggingFaceTB/SmolLM2-1.7B"} 19.883
+vllm:time_to_first_token_seconds_count{model_name="HuggingFaceTB/SmolLM2-1.7B"} 55.0
+# HELP vllm:e2e_request_latency_seconds Histogram of e2e request latency in seconds.
+# TYPE vllm:e2e_request_latency_seconds histogram
+vllm:e2e_request_latency_seconds_bucket{model_name="HuggingFaceTB/SmolLM2-1.7B",le="1.0"} 2.0
+vllm:e2e_request_latency_seconds_bucket{model_name="HuggingFaceTB/SmolLM2-1.7B",le="+Inf"} 55.0
+vllm:e2e_request_latency_seconds_sum{model_name="HuggingFaceTB/SmolLM2-1.7B"} 301.4
+vllm:e2e_request_latency_seconds_count{model_name="HuggingFaceTB/SmolLM2-1.7B"} 55.0
+# HELP vllm:cache_config_info Information of the LLMEngine CacheConfig
+# TYPE vllm:cache_config_info gauge
+vllm:cache_config_info{block_size="16",model_name="HuggingFaceTB/SmolLM2-1.7B"} 1.0
