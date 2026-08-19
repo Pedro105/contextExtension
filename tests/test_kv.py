@@ -48,6 +48,48 @@ def test_uniform_sliding_window_caps_beyond_window():
     assert beyond == at_window
 
 
+def test_interleaved_swa_stays_linear_not_constant():
+    """Gemma3-style interleaved SWA (sliding_window_pattern) must keep growing linearly
+    in ctx_len -- unlike uniform SWA, which caps to a constant beyond the window,
+    because the periodic global layers keep scaling with ctx_len even though the local
+    layers cap out."""
+    spec = ArchSpec(
+        **{**BASE_KWARGS, "num_hidden_layers": 30},
+        sliding_window=1024,
+        sliding_window_pattern=6,  # 5 local + 1 global, repeating -> 5 full, 25 sliding
+    )
+    below_window = kv_bytes_per_token(spec, 512)
+    at_window = kv_bytes_per_token(spec, 1024)
+    beyond_32k = kv_bytes_per_token(spec, 32768)
+    beyond_64k = kv_bytes_per_token(spec, 65536)
+
+    assert below_window < at_window < beyond_32k < beyond_64k  # never flatlines
+
+
+def test_interleaved_vs_global_only_ratio_grows_toward_pattern_period():
+    """At 32k the interleaved (pattern=6, window=1024) model should be ~5x cheaper per
+    token than the same architecture with every layer global, and that ratio should
+    grow toward 6x (the pattern period: 1 global layer per 6) as ctx_len grows toward
+    128k, since the fixed per-layer window cost matters less as ctx_len dominates."""
+    interleaved = ArchSpec(
+        **{**BASE_KWARGS, "num_hidden_layers": 30},
+        sliding_window=1024,
+        sliding_window_pattern=6,
+    )
+    all_global = ArchSpec(**{**BASE_KWARGS, "num_hidden_layers": 30})  # no sliding window at all
+
+    def ratio(ctx_len: int) -> float:
+        return kv_bytes_per_token(all_global, ctx_len) / kv_bytes_per_token(interleaved, ctx_len)
+
+    ratio_32k = ratio(32768)
+    ratio_128k = ratio(131072)
+
+    assert 4.5 <= ratio_32k <= 5.5
+    assert 5.5 <= ratio_128k < 6.0
+    assert ratio_32k < ratio_128k  # grows toward 6x as ctx_len grows
+    assert ratio_128k < 6.0  # never reaches the layer-count-only asymptote
+
+
 def test_interleaved_swa_mixes_full_and_capped_layers():
     layer_types = ("full_attention", "sliding_attention", "full_attention", "sliding_attention")
     spec = ArchSpec(

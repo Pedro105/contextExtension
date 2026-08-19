@@ -26,18 +26,38 @@ class RopeSpectrumPoint:
     periods_completed: float  # trained_ctx_len / wavelength
 
 
-def rope_spectrum(spec: ArchSpec, trained_ctx_len: int | None = None) -> list[RopeSpectrumPoint]:
+def rope_spectrum(
+    spec: ArchSpec, trained_ctx_len: int | None = None, layer_type: str = "global"
+) -> list[RopeSpectrumPoint]:
     """Per-dimension RoPE theta, wavelength, and periods completed within training.
 
     `trained_ctx_len` defaults to `spec.native_max_position_embeddings` — the length
     the model actually saw phase information for, before any context-extension scaling.
+
+    Models with interleaved local/global attention (e.g. Gemma3) can use a different
+    RoPE base frequency per layer type (`spec.rope_theta_local` vs `spec.rope_theta`).
+    Reporting only one spectrum for such a model would silently hide the other, so
+    `layer_type` ("global" or "local") selects which base frequency to use; "local" is
+    only valid when `spec.rope_theta_local` is set.
     """
+    if layer_type == "global":
+        base_theta = spec.rope_theta
+    elif layer_type == "local":
+        if spec.rope_theta_local is None:
+            raise ValueError(
+                f"{spec.hf_model_id}: no separate local-layer rope_theta; "
+                "use layer_type='global' (the only spectrum this model has)"
+            )
+        base_theta = spec.rope_theta_local
+    else:
+        raise ValueError(f"layer_type must be 'global' or 'local', got {layer_type!r}")
+
     ctx_len = trained_ctx_len if trained_ctx_len is not None else spec.native_max_position_embeddings
     n_pairs = spec.head_dim // 2
 
     points = []
     for i in range(n_pairs):
-        theta_i = spec.rope_theta ** (-2 * i / spec.head_dim)
+        theta_i = base_theta ** (-2 * i / spec.head_dim)
         wavelength_i = 2 * math.pi / theta_i
         points.append(
             RopeSpectrumPoint(
@@ -53,18 +73,25 @@ def rope_spectrum(spec: ArchSpec, trained_ctx_len: int | None = None) -> list[Ro
 def plot_rope_spectrum(spec: ArchSpec, trained_ctx_len: int | None = None, save_path=None, ax=None):
     """Plot periods-completed vs. dimension index, marking the under-trained region.
 
+    Models with a separate local-layer RoPE theta (`spec.rope_theta_local`, e.g. Gemma3)
+    get both the global- and local-layer spectra overlaid, since plotting only one would
+    misrepresent a model that actually has two.
+
     Returns the matplotlib Axes. Pass `save_path` to also write the figure to disk.
     """
     import matplotlib.pyplot as plt
 
-    points = rope_spectrum(spec, trained_ctx_len)
-    dims = [p.dim for p in points]
-    periods = [p.periods_completed for p in points]
-
     if ax is None:
         _, ax = plt.subplots(figsize=(8, 4.5))
 
-    ax.plot(dims, periods, marker=".", linewidth=1)
+    layer_types = ["global", "local"] if spec.rope_theta_local is not None else ["global"]
+    for lt in layer_types:
+        points = rope_spectrum(spec, trained_ctx_len, layer_type=lt)
+        dims = [p.dim for p in points]
+        periods = [p.periods_completed for p in points]
+        theta = spec.rope_theta if lt == "global" else spec.rope_theta_local
+        ax.plot(dims, periods, marker=".", linewidth=1, label=f"{lt} (theta={theta:g})")
+
     ax.axhline(1.0, color="red", linestyle="--", linewidth=1, label="1 period completed")
     ax.set_yscale("log")
     ax.set_xlabel("RoPE dimension pair index")

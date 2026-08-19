@@ -66,6 +66,33 @@ def test_ministral_unwraps_text_config_and_yarn_scaling(fixtures_dir):
     assert spec.is_layer_sliding(0) is False
 
 
+def test_gemma3_interleaved_pattern_and_local_theta(fixtures_dir):
+    spec = fetch_arch("google/gemma-3-1b-pt", cache_dir=fixtures_dir)
+    assert spec.num_hidden_layers == 26
+    assert spec.num_key_value_heads == 1  # MQA
+    assert spec.head_dim == 256
+    # expressed as sliding_window_pattern, not an explicit layer_types list
+    assert spec.layer_types is None
+    assert spec.sliding_window_pattern == 6
+    assert spec.sliding_window == 512
+    assert spec.sliding_window_enabled is True
+    # global theta vs. local theta must be captured separately
+    assert spec.rope_theta == 1000000.0
+    assert spec.rope_theta_local == 10000.0
+    assert spec.rope_scaling is None
+    assert spec.native_max_position_embeddings == 32768
+
+    # pattern=6 -> 5 sliding layers then 1 global layer, repeating: layer indices
+    # 0-4 sliding, 5 global, 6-10 sliding, 11 global, ...
+    expected_sliding = [i % 6 != 5 for i in range(spec.num_hidden_layers)]
+    actual_sliding = [spec.is_layer_sliding(i) for i in range(spec.num_hidden_layers)]
+    assert actual_sliding == expected_sliding
+
+    # rope_theta_for_layer must follow the same split
+    assert spec.rope_theta_for_layer(0) == 10000.0  # sliding -> local theta
+    assert spec.rope_theta_for_layer(5) == 1000000.0  # global -> global theta
+
+
 def test_yaml_roundtrip(fixtures_dir, tmp_path):
     spec = fetch_arch("mistralai/Ministral-3-3B-Base-2512", cache_dir=fixtures_dir)
     out = tmp_path / "spec.yaml"

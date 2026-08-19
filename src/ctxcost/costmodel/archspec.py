@@ -6,8 +6,11 @@ under a top-level `rope_theta` on older configs and under a unified `rope_parame
 present-but-possibly-disabled `sliding_window` + `use_sliding_window` pair on some
 families (e.g. Qwen2) and as a per-layer `layer_types` list on others (interleaved
 SWA, e.g. Gemma3-style models); multimodal wrappers (e.g. Mistral3) nest the actual
-text-decoder config under a `text_config` key. `fetch_arch` absorbs all of that so the
-rest of the cost model only ever deals with `ArchSpec`.
+text-decoder config under a `text_config` key. Gemma3 additionally expresses its
+interleaved local/global attention as a `sliding_window_pattern` period rather than an
+explicit `layer_types` list, and uses a different RoPE base frequency for local layers
+(`rope_local_base_freq`) than for global ones (`rope_theta`). `fetch_arch` absorbs all
+of that so the rest of the cost model only ever deals with `ArchSpec`.
 """
 
 from __future__ import annotations
@@ -67,6 +70,18 @@ class ArchSpec:
     # (either all-full, or all-sliding per sliding_window_enabled above).
     layer_types: tuple[str, ...] | None = None
 
+    # Alternate way of expressing interleaved SWA, used by Gemma3 instead of an explicit
+    # layer_types list: a period N where layer_idx is global (full-attention) iff
+    # (layer_idx + 1) % N == 0, and sliding otherwise. E.g. N=6 -> 5 sliding layers then
+    # 1 global layer, repeating. Only consulted when layer_types is None.
+    sliding_window_pattern: int | None = None
+
+    # Some interleaved-SWA models (Gemma3) use a different RoPE base frequency for local
+    # (sliding-window) layers than for global (full-attention) layers -- e.g. Gemma3's
+    # rope_theta=1e6 for global layers vs. rope_local_base_freq=10000 for local layers.
+    # None means every layer shares `rope_theta` (the common case).
+    rope_theta_local: float | None = None
+
     family: str = ""
     description: str = ""
 
@@ -87,7 +102,15 @@ class ArchSpec:
         """Whether layer `layer_idx` uses sliding-window (vs full) attention."""
         if self.layer_types is not None:
             return self.layer_types[layer_idx] in _SLIDING_LAYER_TYPES
+        if self.sliding_window_pattern is not None:
+            return (layer_idx + 1) % self.sliding_window_pattern != 0
         return self.sliding_window_enabled and self.sliding_window is not None
+
+    def rope_theta_for_layer(self, layer_idx: int) -> float:
+        """RoPE base frequency for `layer_idx`, honoring a local/global theta split."""
+        if self.rope_theta_local is not None and self.is_layer_sliding(layer_idx):
+            return self.rope_theta_local
+        return self.rope_theta
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -157,6 +180,21 @@ def _extract_sliding_window(text_cfg: dict) -> tuple[int | None, bool]:
     return int(window), enabled
 
 
+def _extract_interleaved_pattern(text_cfg: dict) -> tuple[int | None, float | None]:
+    """Gemma3-style interleaved local/global attention fields.
+
+    `sliding_window_pattern` (int period) and `rope_local_base_freq` (local-layer RoPE
+    theta) are how Gemma3 expresses interleaved SWA instead of an explicit `layer_types`
+    list. Both are absent on families that don't use this scheme.
+    """
+    pattern = text_cfg.get("sliding_window_pattern")
+    local_theta = text_cfg.get("rope_local_base_freq")
+    return (
+        int(pattern) if pattern is not None else None,
+        float(local_theta) if local_theta is not None else None,
+    )
+
+
 def parse_config(raw: dict, hf_model_id: str) -> ArchSpec:
     """Parse a raw HF `config.json` dict into an ArchSpec."""
     text_cfg = _text_config(raw)
@@ -176,6 +214,9 @@ def parse_config(raw: dict, hf_model_id: str) -> ArchSpec:
     rope_theta, rope_scaling = _extract_rope(raw, text_cfg)
     sliding_window, sliding_window_enabled = _extract_sliding_window(text_cfg)
     layer_types = text_cfg.get("layer_types")
+    sliding_window_pattern, rope_theta_local = _extract_interleaved_pattern(text_cfg)
+    if sliding_window_pattern is not None:
+        sliding_window_enabled = True
 
     return ArchSpec(
         hf_model_id=hf_model_id,
@@ -191,6 +232,8 @@ def parse_config(raw: dict, hf_model_id: str) -> ArchSpec:
         sliding_window=sliding_window,
         sliding_window_enabled=sliding_window_enabled,
         layer_types=tuple(layer_types) if layer_types is not None else None,
+        sliding_window_pattern=sliding_window_pattern,
+        rope_theta_local=rope_theta_local,
     )
 
 

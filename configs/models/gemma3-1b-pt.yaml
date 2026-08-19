@@ -1,0 +1,20 @@
+hf_model_id: google/gemma-3-1b-pt
+num_hidden_layers: 26
+num_attention_heads: 4
+num_key_value_heads: 1
+head_dim: 256
+hidden_size: 1152
+max_position_embeddings: 32768
+rope_theta: 1000000.0
+torch_dtype: bfloat16
+rope_scaling: null
+sliding_window: 512
+sliding_window_enabled: true
+layer_types: null
+sliding_window_pattern: 6
+rope_theta_local: 10000.0
+family: gemma3
+description: 'Google Gemma 3 1B base model. Interleaved local/global attention: sliding_window_pattern=6
+  (5 local sliding-window layers of window 512, then 1 global full-attention layer,
+  repeating over 26 layers). Local layers use rope_local_base_freq=10000; global layers
+  use rope_theta=1e6. No RoPE scaling (native max_position_embeddings=32768).'

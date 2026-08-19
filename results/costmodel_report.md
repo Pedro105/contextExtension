@@ -45,3 +45,18 @@
 | mistralai/Ministral-3-3B-Base-2512 | NVIDIA H100 80GB | 16384 | 1.6250 | 44 | 256 | 44 | kv |
 | mistralai/Ministral-3-3B-Base-2512 | NVIDIA H100 80GB | 32768 | 3.2500 | 22 | 256 | 22 | kv |
 | mistralai/Ministral-3-3B-Base-2512 | NVIDIA H100 80GB | 65536 | 6.5000 | 11 | 256 | 11 | kv |
+| google/gemma-3-1b-pt | NVIDIA L4 | 4096 | 0.0264 | 819 | 256 | 256 | scheduler |
+| google/gemma-3-1b-pt | NVIDIA L4 | 8192 | 0.0420 | 514 | 256 | 256 | scheduler |
+| google/gemma-3-1b-pt | NVIDIA L4 | 16384 | 0.0732 | 294 | 256 | 256 | scheduler |
+| google/gemma-3-1b-pt | NVIDIA L4 | 32768 | 0.1357 | 159 | 256 | 159 | kv |
+| google/gemma-3-1b-pt | NVIDIA L4 | 65536 | 0.2607 | 82 | 256 | 82 | kv |
+| google/gemma-3-1b-pt | NVIDIA A100 80GB | 4096 | 0.0264 | 2730 | 256 | 256 | scheduler |
+| google/gemma-3-1b-pt | NVIDIA A100 80GB | 8192 | 0.0420 | 1714 | 256 | 256 | scheduler |
+| google/gemma-3-1b-pt | NVIDIA A100 80GB | 16384 | 0.0732 | 983 | 256 | 256 | scheduler |
+| google/gemma-3-1b-pt | NVIDIA A100 80GB | 32768 | 0.1357 | 530 | 256 | 256 | scheduler |
+| google/gemma-3-1b-pt | NVIDIA A100 80GB | 65536 | 0.2607 | 276 | 256 | 256 | scheduler |
+| google/gemma-3-1b-pt | NVIDIA H100 80GB | 4096 | 0.0264 | 2730 | 256 | 256 | scheduler |
+| google/gemma-3-1b-pt | NVIDIA H100 80GB | 8192 | 0.0420 | 1714 | 256 | 256 | scheduler |
+| google/gemma-3-1b-pt | NVIDIA H100 80GB | 16384 | 0.0732 | 983 | 256 | 256 | scheduler |
+| google/gemma-3-1b-pt | NVIDIA H100 80GB | 32768 | 0.1357 | 530 | 256 | 256 | scheduler |
+| google/gemma-3-1b-pt | NVIDIA H100 80GB | 65536 | 0.2607 | 276 | 256 | 256 | scheduler |
