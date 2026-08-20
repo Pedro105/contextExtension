@@ -1,0 +1,35 @@
+# Plumbing check against an already-running server this driver never starts or
+# stops -- a Colab GPU tunnel, a rented node, anything reachable over HTTP. Set
+# CTXCOST_EXTERNAL_BASE_URL before running, e.g.:
+#
+#   CTXCOST_EXTERNAL_BASE_URL=https://xxxx.ngrok-free.app \
+#     python scripts/serve_sweep.py --config configs/bench/smoke_external.yaml
+#
+# The driver health-checks the endpoint and verifies /v1/models actually reports
+# hf_model_id below before sending a single request -- it aborts rather than
+# silently benchmarking whatever the server happens to be serving.
+server:
+  mode: external
+  base_url: ${CTXCOST_EXTERNAL_BASE_URL}
+  startup_timeout_s: 60
+
+models:
+  - hf_model_id: hf-internal-testing/tiny-random-gpt2
+
+# A single context length on purpose: external mode can't restart the server to
+# change max_model_len between cells, so this config doesn't ask it to try.
+context_lengths: [64]
+concurrency_levels: [1, 2]
+
+workload:
+  n_requests_per_cell: 4
+  max_output_tokens: 8
+  prefix_tokens: 8
+  enable_shared_prefix: false
+  warmup_requests: 1
+  seed: 0
+
+metrics_poll_interval_s: 0.5
+max_num_seqs: 4
+gpu_memory_utilization: 0.9
+enable_prefix_caching: false

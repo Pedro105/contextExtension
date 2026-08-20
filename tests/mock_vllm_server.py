@@ -24,7 +24,9 @@ async def _read_body(receive) -> bytes:
     return body
 
 
-def make_mock_vllm_app(token_delay_s: float = 0.0, metrics_text: str = "", fail_every: int = 0):
+def make_mock_vllm_app(
+    token_delay_s: float = 0.0, metrics_text: str = "", fail_every: int = 0, served_model_id: str | None = None
+):
     """Build a fresh mock app + its request log.
 
     `token_delay_s`: sleep between streamed token chunks, to produce measurable,
@@ -32,6 +34,8 @@ def make_mock_vllm_app(token_delay_s: float = 0.0, metrics_text: str = "", fail_
     `metrics_text`: raw body served at /metrics.
     `fail_every`: if > 0, every Nth request (1-indexed) returns a 500 instead of
     streaming, to exercise client.py's per-request error handling.
+    `served_model_id`: if set, GET /v1/models reports this as the one served model
+    id (real vLLM's response shape), for testing external-mode model verification.
 
     Returns (app, request_log) -- request_log is a list this app appends each
     decoded /v1/completions request body to, so tests can assert on what was sent.
@@ -45,6 +49,18 @@ def make_mock_vllm_app(token_delay_s: float = 0.0, metrics_text: str = "", fail_
         if method == "GET" and path == "/health":
             await send({"type": "http.response.start", "status": 200, "headers": []})
             await send({"type": "http.response.body", "body": b"OK"})
+            return
+
+        if method == "GET" and path == "/v1/models" and served_model_id is not None:
+            body = json.dumps({"data": [{"id": served_model_id, "object": "model"}]}).encode()
+            await send(
+                {
+                    "type": "http.response.start",
+                    "status": 200,
+                    "headers": [(b"content-type", b"application/json")],
+                }
+            )
+            await send({"type": "http.response.body", "body": body})
             return
 
         if method == "GET" and path == "/metrics":

@@ -25,5 +25,6 @@ workload:
   seed: 0
 
 metrics_poll_interval_s: 1.0
+max_num_seqs: 256
 gpu_memory_utilization: 0.9
 enable_prefix_caching: false

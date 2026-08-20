@@ -1,14 +1,14 @@
-# Harness plumbing check: tiny model, CPU backend, short contexts, low request
-# counts. Verifies the sweep driver, load generator, metrics scraper, and analysis
-# path all work end to end -- not a real measurement. Should run in well under a
-# minute once the CPU image (deploy/docker/serve.cpu.Dockerfile) is built and the
-# tiny model is cached locally.
+# Harness plumbing check: tiny model, subprocess-launched vLLM (no Docker), short
+# contexts, low request counts. Verifies the sweep driver, load generator, metrics
+# scraper, and analysis path all work end to end -- not a real measurement. Requires
+# vLLM installed locally (`pip install -e .[serve]`); since vLLM depends on
+# transformers itself, allow_fake_tokenizer is deliberately left at its default
+# (false) -- a real tokenizer is expected to be available whenever this can run at
+# all.
 server:
-  mode: docker
-  image: ctxcost-serve:cpu
-  gpu: false
+  mode: subprocess
   host_port: 8000
-  startup_timeout_s: 300 # tiny model, but CPU cold-start can still take a minute or two
+  startup_timeout_s: 300 # tiny model, but cold-start (weights download, CUDA init) can still take a while
 
 models:
   - hf_model_id: hf-internal-testing/tiny-random-gpt2
@@ -25,5 +25,6 @@ workload:
   seed: 0
 
 metrics_poll_interval_s: 0.5
-gpu_memory_utilization: 0.9 # unused on the CPU image; kept for schema consistency
+max_num_seqs: 4
+gpu_memory_utilization: 0.9
 enable_prefix_caching: false
